@@ -1,0 +1,27 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test backend
+        run: |
+          docker build -t fastapi-backend backend
+          docker run -d -p 8000:8000 --name fastapi-test fastapi-backend
+          sleep 5
+          curl --fail http://localhost:8000/
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
