@@ -26,10 +26,14 @@ class CustomMangum:
     def __call__(self, event, context):
         # Strip /api prefix from the path
         if 'path' in event:
-            if event['path'].startswith('/api'):
-                event['path'] = event['path'][4:]  # Remove '/api'
+            original_path = event['path']
+            if original_path.startswith('/api'):
+                event['path'] = original_path[4:]  # Remove '/api'
                 if event['path'] == '':
                     event['path'] = '/'
+                # Also update rawPath if it exists
+                if 'rawPath' in event:
+                    event['rawPath'] = event['path']
         
         return self.mangum_app(event, context)
 
