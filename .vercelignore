@@ -9,3 +9,4 @@ backend/uv.lock
 .git
 .github
 README.md
+backend/data
