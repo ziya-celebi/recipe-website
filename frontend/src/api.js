@@ -1,6 +1,4 @@
-// Backend base URL. Set VITE_API_BASE (e.g. in Vercel project env vars)
-// to point at the deployed backend; falls back to local dev by default.
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
+const API_BASE = 'http://localhost:8000'
 
 export async function fetchRecipes(query = '') {
   const url = query
