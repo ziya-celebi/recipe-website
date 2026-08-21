@@ -1,0 +1,11 @@
+node_modules
+frontend/node_modules
+frontend/dist
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/.python-version
+backend/uv.lock
+.git
+.github
+README.md

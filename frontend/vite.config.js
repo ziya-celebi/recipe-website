@@ -6,8 +6,12 @@ export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
+      '/api': 'http://localhost:8000',
       '/media': 'http://localhost:8000',
       '/static': 'http://localhost:8000',
     },
+  },
+  build: {
+    outDir: 'dist',
   },
 })

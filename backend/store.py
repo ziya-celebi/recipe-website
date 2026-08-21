@@ -134,6 +134,9 @@ SEED_RECIPES = [
 
 
 def data_dir() -> Path:
+    # Use /tmp for serverless environments (Vercel), local data directory otherwise
+    if os.environ.get("VERCEL"):
+        return Path("/tmp/recipe_data")
     return Path(os.environ.get("RECIPE_DATA_DIR", Path(__file__).resolve().parent / "data"))
 
 

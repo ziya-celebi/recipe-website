@@ -7,10 +7,11 @@ authors = [
     { name = "ziya-celebi", email = "ziyacelebi30@gmail.com" },
     { name = "smile-core", email = "smileshalom74@gmail.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.141.1",
     "jinja2>=3.1.6",
+    "mangum>=0.17.0",
     "python-multipart>=0.0.32",
     "uvicorn>=0.52.4",
 ]
