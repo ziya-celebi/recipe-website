@@ -20,15 +20,22 @@ jobs:
           docker build -t fastapi-backend backend
           docker run -d -p 8000:8000 --name fastapi-test fastapi-backend
           
-          # Wait for the containerized server to actually start responding
           echo "Waiting for FastAPI to start..."
+          SUCCESS=0
           for i in {1..30}; do
             if curl -s http://localhost:8000/ > /dev/null; then
               echo "Server is up!"
+              SUCCESS=1
               break
             fi
             sleep 1
           done
+
+          if [ $SUCCESS -eq 0 ]; then
+            echo "=== SERVER FAILED TO START. DOCKER LOGS: ==="
+            docker logs fastapi-test
+            exit 1
+          fi
 
           # Run the smoke tests now that it's confirmed running
           curl --fail http://localhost:8000/
