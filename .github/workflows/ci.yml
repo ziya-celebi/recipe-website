@@ -18,9 +18,19 @@ jobs:
       - name: Build and smoke-test backend image
         run: |
           docker build -t fastapi-backend backend
-          # Added -p 8000:8000 so the host can talk to the container
           docker run -d -p 8000:8000 --name fastapi-test fastapi-backend
-          sleep 5
+          
+          # Wait for the containerized server to actually start responding
+          echo "Waiting for FastAPI to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8000/ > /dev/null; then
+              echo "Server is up!"
+              break
+            fi
+            sleep 1
+          done
+
+          # Run the smoke tests now that it's confirmed running
           curl --fail http://localhost:8000/
           curl --fail http://localhost:8000/recipes
 
