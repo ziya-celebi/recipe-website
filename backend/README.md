@@ -6,5 +6,5 @@ curl http://localhost:8000/
 
 for dev
 
-for .venv: uv sync
+uv sync
 uv run uvicorn main:app --reload
