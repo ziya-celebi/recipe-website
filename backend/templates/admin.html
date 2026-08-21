@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe Website Admin</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card-bg: #1a1d26;
+      --card-border: #2a2e3d;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --primary: #aa3bff;
+      --primary-hover: #bc5fff;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success-bg: rgba(34, 197, 94, 0.15);
+      --success-border: #22c55e;
+      --success-text: #4ade80;
+      --error-bg: rgba(239, 68, 68, 0.15);
+      --error-border: #ef4444;
+      --error-text: #fca5a5;
+      --info-bg: rgba(170, 59, 255, 0.15);
+      --info-border: #aa3bff;
+      --info-text: #c084fc;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--sans);
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 0;
+    }
+
+    .header {
+      background: #151821;
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .header-brand h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--info-bg);
+      color: var(--info-text);
+      border: 1px solid var(--info-border);
+    }
+
+    .link-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #252936;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .link-button:hover {
+      background: #32384a;
+      border-color: #3e455b;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    .alert {
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 15px;
+    }
+
+    .alert-success {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: var(--success-text);
+    }
+
+    .alert-error {
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+    }
+
+    .alert-info {
+      background: var(--info-bg);
+      border: 1px solid var(--info-border);
+      color: var(--info-text);
+    }
+
+    .alert a {
+      color: inherit;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .card-header {
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .card-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-header p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .label-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: #12141c;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(170, 59, 255, 0.2);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.45;
+    }
+
+    .file-upload-box {
+      border: 1px dashed var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+      background: #12141c;
+      margin-bottom: 8px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #252936;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #32384a;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-danger-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+      border-radius: 6px;
+    }
+
+    .btn-danger-sm:hover {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .recipe-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .recipe-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      background: #14161f;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .recipe-row:hover {
+      border-color: #3e455b;
+    }
+
+    .recipe-thumb {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #252936;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .recipe-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .recipe-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .recipe-info-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .recipe-info h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recipe-info p {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .recipe-meta-tags {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .recipe-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="/admin" class="header-brand">
+      <span style="font-size: 24px;">🍳</span>
+      <h1>Recipe Website Admin</h1>
+      <span class="badge">{{ recipes|length }} Recipes</span>
+    </a>
+    <div class="header-actions">
+      <a href="http://localhost:5173" target="_blank" class="link-button">
+        🌐 Open Public Site ↗
+      </a>
+      <span class="badge" style="background: rgba(34, 197, 94, 0.1); border-color: #22c55e; color: #4ade80;">
+        Admin Mode
+      </span>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if created %}
+    <div class="alert alert-success">
+      <div>
+        🎉 <strong>Recipe created successfully!</strong>
+        {% if request.query_params.get('id') %}
+        <a href="http://localhost:5173/recipes/{{ request.query_params.get('id') }}" target="_blank">
+          View Recipe in Catalog ↗
+        </a>
+        {% endif %}
+      </div>
+      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+    </div>
+    {% endif %}
+
+    {% if deleted %}
+    <div class="alert alert-info">
+      <div>🗑️ <strong>Recipe was deleted successfully.</strong></div>
+      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">
+      <div>⚠️ <strong>Error:</strong> {{ error }}</div>
+      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+    </div>
+    {% endif %}
+
+    <div class="layout-grid">
+      <!-- Left Column: Add New Recipe Form -->
+      <div class="card">
+        <div class="card-header">
+          <h2>➕ Add New Recipe</h2>
+          <p>Fill in the details below to add a new dish to the recipe collection.</p>
+        </div>
+
+        <form action="/admin/recipes" method="POST" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="title">Recipe Title <span style="color: var(--danger);">*</span></label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              placeholder="e.g., Avocado Toast with Poached Egg"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Short Description</label>
+            <textarea
+              id="description"
+              name="description"
+              rows="2"
+              placeholder="Brief description or teaser of the dish..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="image_file">
+              Recipe Photo
+              <span class="label-hint">(Upload file or provide URL below)</span>
+            </label>
+            <div class="file-upload-box">
+              <input type="file" id="image_file" name="image" accept="image/*" />
+            </div>
+            <input
+              type="text"
+              id="image_url"
+              name="image_url"
+              placeholder="or image path/URL (e.g. /recipes/pancakes.jpg)"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="ingredients">
+              Ingredients
+              <span class="label-hint">(One ingredient per line)</span>
+            </label>
+            <textarea
+              id="ingredients"
+              name="ingredients"
+              rows="5"
+              placeholder="2 thick slices sourdough bread&#10;1 ripe avocado&#10;2 eggs&#10;1 tbsp olive oil&#10;Pinch of chili flakes"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="steps">
+              Preparation Steps
+              <span class="label-hint">(One step per line)</span>
+            </label>
+            <textarea
+              id="steps"
+              name="steps"
+              rows="5"
+              placeholder="Toast the sourdough bread slices until golden and crisp.&#10;Mash the avocado with lemon juice, salt, and pepper.&#10;Poach the eggs in simmering water for 3 minutes.&#10;Spread avocado on toast and top with poached eggs."
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">➕ Publish Recipe</button>
+            <button type="button" class="btn btn-secondary" onclick="loadExample()">✨ Load Example</button>
+            <button type="reset" class="btn btn-ghost">Reset</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right Column: Current Recipe Catalog -->
+      <div class="card">
+        <div class="card-header">
+          <h2>📚 Current Recipes ({{ recipes|length }})</h2>
+          <p>Manage, inspect, or remove existing recipes from the database.</p>
+        </div>
+
+        <div class="recipe-list">
+          {% for r in recipes %}
+          <div class="recipe-row">
+            <div class="recipe-thumb">
+              {% if r.image %}
+              <img src="{{ r.image }}" alt="{{ r.title }}" onerror="this.parentElement.innerHTML='🍳'" />
+              {% else %}
+              🍳
+              {% endif %}
+            </div>
+            <div class="recipe-info">
+              <div class="recipe-info-header">
+                <span class="badge" style="font-size: 11px; padding: 2px 6px;">#{{ r.id }}</span>
+                <h3>{{ r.title }}</h3>
+              </div>
+              <p>{{ r.description }}</p>
+              <div class="recipe-meta-tags">
+                <span>🥕 {{ r.ingredients|length }} ingredients</span>
+                <span>•</span>
+                <span>📝 {{ r.steps|length }} steps</span>
+              </div>
+            </div>
+            <div class="recipe-actions">
+              <a
+                href="http://localhost:5173/recipes/{{ r.id }}"
+                target="_blank"
+                class="link-button"
+                style="padding: 6px 10px; font-size: 13px;"
+                title="View in frontend app"
+              >
+                👁️ View
+              </a>
+              <form
+                action="/admin/recipes/{{ r.id }}/delete"
+                method="POST"
+                onsubmit="return confirm('Are you sure you want to delete \'{{ r.title }}\'? This action cannot be undone.');"
+              >
+                <button type="submit" class="btn btn-danger-sm" title="Delete recipe">
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function loadExample() {
+      document.getElementById('title').value = 'Lemon Garlic Salmon';
+      document.getElementById('description').value = 'Pan-seared salmon fillets with a buttery lemon and fresh herb reduction.';
+      document.getElementById('image_url').value = '';
+      document.getElementById('ingredients').value = [
+        '2 salmon fillets (skin-on)',
+        '2 tbsp unsalted butter',
+        '2 garlic cloves, minced',
+        '1 fresh lemon (half juiced, half sliced)',
+        '1 tbsp olive oil',
+        'Fresh dill or parsley',
+        'Salt and freshly ground black pepper'
+      ].join('\n');
+      document.getElementById('steps').value = [
+        'Season the salmon fillets generously with salt and black pepper.',
+        'Heat olive oil in a skillet over medium-high heat until hot.',
+        'Place salmon skin-side down and cook for 4-5 minutes until crispy, then flip.',
+        'Add butter, minced garlic, and lemon juice to the pan, spooning the melted sauce over the salmon for 2-3 minutes.',
+        'Garnish with lemon slices and chopped dill before serving warm.'
+      ].join('\n');
+    }
+  </script>
+</body>
+</html>
+
