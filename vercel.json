@@ -3,24 +3,24 @@
     "outputDirectory": "frontend/dist",
     "rewrites": [
         {
-            "source": "/api/(.*)",
+            "source": "/api/:path*",
             "destination": "/api/index.py"
         },
         {
-            "source": "/admin(/.*)?",
+            "source": "/admin/:path*",
             "destination": "/api/index.py"
         },
         {
-            "source": "/media/(.*)",
+            "source": "/media/:path*",
             "destination": "/api/index.py"
         },
         {
-            "source": "/static/(.*)",
+            "source": "/static/:path*",
             "destination": "/api/index.py"
         },
         {
-            "source": "/(.*)",
-            "destination": "/$1"
+            "source": "/:path*",
+            "destination": "/:path*"
         }
     ]
 }
