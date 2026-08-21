@@ -17,4 +17,20 @@ if backend_src.exists():
 from mangum import Mangum
 from main import app
 
-handler = Mangum(app)
+# Custom handler to strip /api prefix
+class CustomMangum:
+    def __init__(self, app):
+        self.app = app
+        self.mangum_app = Mangum(app)
+    
+    def __call__(self, event, context):
+        # Strip /api prefix from the path
+        if 'path' in event:
+            if event['path'].startswith('/api'):
+                event['path'] = event['path'][4:]  # Remove '/api'
+                if event['path'] == '':
+                    event['path'] = '/'
+        
+        return self.mangum_app(event, context)
+
+handler = CustomMangum(app)
