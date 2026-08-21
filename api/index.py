@@ -17,5 +17,4 @@ if backend_src.exists():
 from mangum import Mangum
 from main import app
 
-# Configure Mangum to strip the /api prefix
-handler = Mangum(app, api_gateway_base_path="/api")
+handler = Mangum(app)
