@@ -17,24 +17,43 @@ if backend_src.exists():
 from mangum import Mangum
 from main import app
 
+
+def _strip_api_prefix(path: str | None) -> str | None:
+    if not path:
+        return path
+    if path == "/api":
+        return "/"
+    if path.startswith("/api/"):
+        return path[4:] or "/"
+    if path.startswith("/api") and len(path) > 4:
+        return path[4:] or "/"
+    return path
+
+
 # Custom handler to strip /api prefix
 class CustomMangum:
     def __init__(self, app):
         self.app = app
         self.mangum_app = Mangum(app)
-    
+
     def __call__(self, event, context):
-        # Strip /api prefix from the path
-        if 'path' in event:
-            original_path = event['path']
-            if original_path.startswith('/api'):
-                event['path'] = original_path[4:]  # Remove '/api'
-                if event['path'] == '':
-                    event['path'] = '/'
-                # Also update rawPath if it exists
-                if 'rawPath' in event:
-                    event['rawPath'] = event['path']
-        
+        if isinstance(event, dict):
+            for key in ("path", "rawPath"):
+                if key in event:
+                    event[key] = _strip_api_prefix(event[key])
+
+            request_context = event.get("requestContext")
+            if isinstance(request_context, dict):
+                request_context["path"] = _strip_api_prefix(request_context.get("path"))
+                http_data = request_context.get("http")
+                if isinstance(http_data, dict):
+                    http_data["path"] = _strip_api_prefix(http_data.get("path"))
+
+            if "path" in event and event["path"] == "/":
+                if "rawPath" in event and event["rawPath"] == "/":
+                    event["rawPath"] = "/"
+
         return self.mangum_app(event, context)
+
 
 handler = CustomMangum(app)
