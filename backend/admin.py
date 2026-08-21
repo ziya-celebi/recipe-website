@@ -16,7 +16,7 @@ ALLOWED_IMAGE_TYPES = {
     "image/gif": ".gif",
 }
 
-router = APIRouter(prefix="/api/admin", dependencies=[Depends(require_admin)])
+router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
 
