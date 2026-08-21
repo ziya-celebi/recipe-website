@@ -12,7 +12,7 @@ COPY README.md ./
 COPY main.py ./
 COPY src ./src
 COPY tests ./tests
-COPY admin ./admin
+COPY admin.py ./admin.py
 
 RUN uv sync --frozen --no-dev
 
