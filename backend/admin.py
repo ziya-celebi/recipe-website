@@ -8,7 +8,15 @@ from fastapi.templating import Jinja2Templates
 
 from auth import require_admin
 from models import RecipeCreate
-from store import create_recipe, delete_recipe, list_recipes, uploads_dir
+from store import create_recipe, delete_recipe, get_db_type, list_recipes, uploads_dir
+
+try:
+    import cloudinary
+    import cloudinary.uploader
+
+    _CLOUDINARY_AVAILABLE = True
+except ImportError:
+    _CLOUDINARY_AVAILABLE = False
 
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg": ".jpg",
@@ -31,6 +39,19 @@ def _lines(value: str) -> list[str]:
 
 def _save_image(image: UploadFile | None, image_url: str = "") -> str | None:
     if image is not None and image.filename:
+        # 1. Try uploading to Cloudinary if configured
+        if _CLOUDINARY_AVAILABLE and os.environ.get("CLOUDINARY_URL"):
+            try:
+                res = cloudinary.uploader.upload(
+                    image.file,
+                    folder="recipe_website",
+                    resource_type="image",
+                )
+                return res.get("secure_url") or res.get("url")
+            except Exception as e:
+                print(f"Cloudinary upload failed: {e}")
+
+        # 2. Local file storage fallback
         suffix = ALLOWED_IMAGE_TYPES.get(image.content_type or "")
         if suffix is None:
             suffix = Path(image.filename).suffix.lower()
@@ -63,8 +84,10 @@ def admin_home(
             "deleted": deleted == 1,
             "error": error,
             "site_base": _site_base(),
+            "db_type": get_db_type(),
         },
     )
+
 
 
 @router.post("/recipes")

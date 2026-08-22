@@ -158,3 +158,30 @@ def test_admin_delete_recipe(recipes):
     )
     assert response.status_code == 303
     assert "deleted=1" in response.headers["location"]
+
+
+def test_db_url_postgres_formatting(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgres://user:pass@ep-cool-db.us-east-2.aws.neon.tech/neondb?sslmode=require")
+    assert store.get_db_url().startswith("postgresql://")
+    assert store.is_postgres() is True
+    assert store.get_db_type() == "PostgreSQL (Cloud)"
+
+
+def test_legacy_recipes_json_migration(monkeypatch, tmp_path):
+    # Create legacy recipes.json before store initialization
+    data_dir = tmp_path / "legacy_data"
+    data_dir.mkdir()
+    legacy_json = data_dir / "recipes.json"
+    legacy_json.write_text(
+        '[{"id": 1, "title": "Legacy Pasta", "description": "Classic pasta", "image": null, "ingredients": ["Pasta"], "steps": ["Boil"]}]',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECIPE_DATA_DIR", str(data_dir))
+    store.reset()
+
+    # Querying recipes should automatically migrate the JSON content into SQLite
+    items = store.list_recipes()
+    assert len(items) == 1
+    assert items[0].title == "Legacy Pasta"
+    assert items[0].ingredients == ["Pasta"]
+

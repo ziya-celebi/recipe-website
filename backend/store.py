@@ -3,12 +3,39 @@ import os
 from pathlib import Path
 from threading import Lock
 
+from sqlalchemy import Column, Integer, String, Text, JSON, create_engine, select, delete
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
 from models import Recipe, RecipeCreate
 
 _lock = Lock()
-_recipes: list[Recipe] | None = None
+_engine = None
+_SessionLocal = None
 
 SEED_RECIPES: list[Recipe] = []
+
+Base = declarative_base()
+
+
+class RecipeRecord(Base):
+    __tablename__ = "recipes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False, default="")
+    image = Column(Text, nullable=True)
+    ingredients = Column(JSON, nullable=False, default=list)
+    steps = Column(JSON, nullable=False, default=list)
+
+    def to_pydantic(self) -> Recipe:
+        return Recipe(
+            id=self.id,
+            title=self.title,
+            description=self.description or "",
+            image=self.image,
+            ingredients=list(self.ingredients or []),
+            steps=list(self.steps or []),
+        )
 
 
 def data_dir() -> Path:
@@ -18,78 +45,146 @@ def data_dir() -> Path:
     return Path(os.environ.get("RECIPE_DATA_DIR", Path(__file__).resolve().parent / "data"))
 
 
-def recipes_path() -> Path:
-    return data_dir() / "recipes.json"
-
-
 def uploads_dir() -> Path:
     path = data_dir() / "uploads"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def reset() -> None:
-    global _recipes
-    with _lock:
-        _recipes = None
-
-
-def _read_file() -> list[Recipe] | None:
-    path = recipes_path()
-    if not path.exists():
-        return None
-    raw = json.loads(path.read_text(encoding="utf-8"))
-    return [Recipe.model_validate(item) for item in raw]
-
-
-def _write_file(recipes: list[Recipe]) -> None:
-    path = recipes_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps([recipe.model_dump() for recipe in recipes], indent=2) + "\n",
-        encoding="utf-8",
+def get_db_url() -> str:
+    url = (
+        os.environ.get("DATABASE_URL")
+        or os.environ.get("POSTGRES_URL")
+        or os.environ.get("POSTGRES_PRISMA_URL")
     )
+    if url:
+        # SQLAlchemy requires postgresql:// instead of postgres://
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return url
+
+    # Default to local SQLite database
+    db_dir = data_dir()
+    db_dir.mkdir(parents=True, exist_ok=True)
+    db_file = db_dir / "recipes.db"
+    return f"sqlite:///{db_file}"
 
 
-def _loaded() -> list[Recipe]:
-    global _recipes
-    if _recipes is None:
-        _recipes = _read_file()
-        if _recipes is None:
-            _recipes = [recipe.model_copy() for recipe in SEED_RECIPES]
-            _write_file(_recipes)
-    return _recipes
+def is_postgres() -> bool:
+    return get_db_url().startswith("postgresql")
+
+
+def get_db_type() -> str:
+    return "PostgreSQL (Cloud)" if is_postgres() else "SQLite (Local)"
+
+
+def _get_session_factory():
+    global _engine, _SessionLocal
+    if _SessionLocal is None:
+        db_url = get_db_url()
+        connect_args = {}
+        engine_kwargs = {"pool_pre_ping": True}
+        if db_url.startswith("sqlite"):
+            connect_args["check_same_thread"] = False
+            # SQLite doesn't support pool_pre_ping
+            engine_kwargs.pop("pool_pre_ping", None)
+
+        _engine = create_engine(db_url, connect_args=connect_args, **engine_kwargs)
+        Base.metadata.create_all(bind=_engine)
+        _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+
+        # Seed initial data if table is brand new and empty
+        _maybe_seed(_SessionLocal)
+
+    return _SessionLocal
+
+
+def _maybe_seed(session_factory):
+    with session_factory() as session:
+        count = session.query(RecipeRecord).count()
+        if count == 0:
+            # 1. Seed from SEED_RECIPES if defined
+            if SEED_RECIPES:
+                for recipe in SEED_RECIPES:
+                    record = RecipeRecord(
+                        title=recipe.title,
+                        description=recipe.description,
+                        image=recipe.image,
+                        ingredients=recipe.ingredients,
+                        steps=recipe.steps,
+                    )
+                    session.add(record)
+                session.commit()
+            else:
+                # 2. Check if an existing legacy recipes.json exists to migrate
+                json_path = data_dir() / "recipes.json"
+                if json_path.exists():
+                    try:
+                        raw = json.loads(json_path.read_text(encoding="utf-8"))
+                        for item in raw:
+                            record = RecipeRecord(
+                                title=item.get("title", ""),
+                                description=item.get("description", ""),
+                                image=item.get("image"),
+                                ingredients=item.get("ingredients", []),
+                                steps=item.get("steps", []),
+                            )
+                            session.add(record)
+                        session.commit()
+                    except Exception:
+                        pass
+
+
+def reset() -> None:
+    global _engine, _SessionLocal
+    with _lock:
+        if _engine is not None:
+            _engine.dispose()
+        _engine = None
+        _SessionLocal = None
 
 
 def list_recipes() -> list[Recipe]:
     with _lock:
-        return [recipe.model_copy() for recipe in _loaded()]
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            records = session.query(RecipeRecord).order_by(RecipeRecord.id.asc()).all()
+            return [record.to_pydantic() for record in records]
 
 
 def get_recipe(recipe_id: int) -> Recipe | None:
     with _lock:
-        for recipe in _loaded():
-            if recipe.id == recipe_id:
-                return recipe.model_copy()
-    return None
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            record = session.query(RecipeRecord).filter(RecipeRecord.id == recipe_id).first()
+            return record.to_pydantic() if record else None
 
 
 def create_recipe(payload: RecipeCreate) -> Recipe:
     with _lock:
-        recipes = _loaded()
-        next_id = max((recipe.id for recipe in recipes), default=0) + 1
-        recipe = Recipe(id=next_id, **payload.model_dump())
-        recipes.append(recipe)
-        _write_file(recipes)
-        return recipe.model_copy()
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            record = RecipeRecord(
+                title=payload.title,
+                description=payload.description,
+                image=payload.image,
+                ingredients=payload.ingredients,
+                steps=payload.steps,
+            )
+            session.add(record)
+            session.commit()
+            session.refresh(record)
+            return record.to_pydantic()
 
 
 def delete_recipe(recipe_id: int) -> bool:
     with _lock:
-        recipes = _loaded()
-        for i, recipe in enumerate(recipes):
-            if recipe.id == recipe_id:
-                recipes.pop(i)
-                _write_file(recipes)
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            record = session.query(RecipeRecord).filter(RecipeRecord.id == recipe_id).first()
+            if record:
+                session.delete(record)
+                session.commit()
                 return True
-        return False
+            return False
+

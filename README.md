@@ -79,10 +79,12 @@ relative URLs and no CORS setup is needed. Open http://localhost:5173.
 
 | Variable | Where | Default | Purpose |
 | --- | --- | --- | --- |
+| `DATABASE_URL` | backend / Vercel | `""` (uses local SQLite) | PostgreSQL connection string (e.g. from Neon, Supabase, Vercel Postgres) |
+| `CLOUDINARY_URL` | backend / Vercel | `""` (uses local uploads) | Cloudinary URL for persistent image uploads |
 | `VITE_API_BASE_URL` | frontend build | `""` (same origin) | Point the frontend at a backend on a different origin |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | backend | `admin` / `admin` | Basic auth for `/api/admin` |
 | `SITE_BASE_URL` | backend | `""` (same origin) | Base URL the admin panel links to (e.g. `http://localhost:5173` in dev) |
-| `RECIPE_DATA_DIR` | backend | `backend/data` | Where `recipes.json` and uploads are stored |
+| `RECIPE_DATA_DIR` | backend | `backend/data` | Where local SQLite database and uploads are stored |
 
 ---
 
@@ -95,7 +97,7 @@ relative URLs and no CORS setup is needed. Open http://localhost:5173.
 | POST | `/api/recipes` | Create a recipe |
 | DELETE | `/api/recipes/{id}` | Delete a recipe |
 | GET | `/api/admin` | Admin panel (HTTP basic auth) |
-| GET | `/api/media/{file}` | Uploaded images |
+| GET | `/api/media/{file}` | Uploaded images (local dev fallback) |
 
 ---
 
@@ -114,8 +116,9 @@ cd backend && pytest
 - `/api/*` → the FastAPI app in `api/index.py` (Python serverless function)
 - everything else → `index.html`, so client-side routes such as `/recipes/1` work
 
-Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` in the Vercel project settings.
+### Environment Variables on Vercel:
+Add these in **Vercel Dashboard → Project Settings → Environment Variables**:
+1. `DATABASE_URL`: Your PostgreSQL connection string from [Neon](https://neon.tech) or [Supabase](https://supabase.com) (e.g. `postgresql://user:password@ep-xyz.aws.neon.tech/neondb?sslmode=require`).
+2. `ADMIN_USERNAME` & `ADMIN_PASSWORD`: Custom credentials for `/api/admin`.
+3. (Optional) `CLOUDINARY_URL`: From [Cloudinary](https://cloudinary.com) for persistent image uploads (`cloudinary://key:secret@cloudname`).
 
-Note: serverless filesystems are ephemeral — recipes created through the admin
-panel are written to `/tmp` and are lost when the instance recycles. Use a real
-database or object storage for persistent content.
