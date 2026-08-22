@@ -113,6 +113,12 @@ onMounted(async () => {
 
     <p v-if="status" class="status">{{ status }}</p>
 
+    <!-- Empty state when no recipes exist yet -->
+    <div v-else-if="recipes.length === 0" class="empty-state">
+      <p class="empty-title">No recipes yet</p>
+      <p class="empty-text">Recipes added from the admin panel show up here.</p>
+    </div>
+
     <!-- Empty state for empty saved list -->
     <div
       v-else-if="activeTab === 'favorites' && favoritesCount === 0"
