@@ -403,13 +403,13 @@
 </head>
 <body>
   <header class="header">
-    <a href="/admin" class="header-brand">
+    <a href="/api/admin" class="header-brand">
       <span style="font-size: 24px;">🍳</span>
       <h1>Recipe Website Admin</h1>
       <span class="badge">{{ recipes|length }} Recipes</span>
     </a>
     <div class="header-actions">
-      <a href="http://localhost:5173" target="_blank" class="link-button">
+      <a href="{{ site_base }}/recipes" target="_blank" class="link-button">
         🌐 Open Public Site ↗
       </a>
       <span class="badge" style="background: rgba(34, 197, 94, 0.1); border-color: #22c55e; color: #4ade80;">
@@ -424,26 +424,26 @@
       <div>
         🎉 <strong>Recipe created successfully!</strong>
         {% if request.query_params.get('id') %}
-        <a href="http://localhost:5173/recipes/{{ request.query_params.get('id') }}" target="_blank">
+        <a href="{{ site_base }}/recipes/{{ request.query_params.get('id') }}" target="_blank">
           View Recipe in Catalog ↗
         </a>
         {% endif %}
       </div>
-      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+      <a href="/api/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
     </div>
     {% endif %}
 
     {% if deleted %}
     <div class="alert alert-info">
       <div>🗑️ <strong>Recipe was deleted successfully.</strong></div>
-      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+      <a href="/api/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
     </div>
     {% endif %}
 
     {% if error %}
     <div class="alert alert-error">
       <div>⚠️ <strong>Error:</strong> {{ error }}</div>
-      <a href="/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
+      <a href="/api/admin" style="font-size: 13px; text-decoration: none; opacity: 0.8;">✕ Dismiss</a>
     </div>
     {% endif %}
 
@@ -455,7 +455,7 @@
           <p>Fill in the details below to add a new dish to the recipe collection.</p>
         </div>
 
-        <form action="/admin/recipes" method="POST" enctype="multipart/form-data">
+        <form action="/api/admin/recipes" method="POST" enctype="multipart/form-data">
           <div class="form-group">
             <label for="title">Recipe Title <span style="color: var(--danger);">*</span></label>
             <input
@@ -558,7 +558,7 @@
             </div>
             <div class="recipe-actions">
               <a
-                href="http://localhost:5173/recipes/{{ r.id }}"
+                href="{{ site_base }}/recipes/{{ r.id }}"
                 target="_blank"
                 class="link-button"
                 style="padding: 6px 10px; font-size: 13px;"
@@ -567,7 +567,7 @@
                 👁️ View
               </a>
               <form
-                action="/admin/recipes/{{ r.id }}/delete"
+                action="/api/admin/recipes/{{ r.id }}/delete"
                 method="POST"
                 onsubmit="return confirm('Are you sure you want to delete \'{{ r.title }}\'? This action cannot be undone.');"
               >
