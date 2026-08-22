@@ -3,6 +3,8 @@
 A full‑stack recipe website built with **FastAPI** (backend) and **React + Vite** (frontend).  
 Everything you need to run, develop, test, and deploy in one place.
 
+Tip: run the backend and frontend in separate terminals during development.
+
 ---
 
 ## Table of Contents
