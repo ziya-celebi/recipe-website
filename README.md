@@ -115,7 +115,7 @@ cd backend && pytest
 
 ## Deploying to Vercel
 
-`vercel.json` builds the frontend to `frontend/dist` and routes traffic:
+`vercel.json` builds the frontend into `frontend/dist` and routes traffic:
 
 - `/api/*` → the FastAPI app in `api/index.py` (Python serverless function)
 - everything else → `index.html`, so client-side routes such as `/recipes/1` work
