@@ -7,7 +7,8 @@ panel) and a **Vue 3 + Vite** single-page frontend, deployed as one Vercel proje
   `localStorage`).
 - Add and delete recipes — including image upload — from the admin panel at `/api/admin`.
 - Recipes live in SQL (PostgreSQL when `DATABASE_URL` is set, otherwise local SQLite);
-  images go to Supabase Storage when configured, otherwise to local disk.
+  images go to Supabase Storage when configured, otherwise into the database and are
+  served from `/api/media/{file}`.
 
 ## Table of Contents
 - [Tech Stack](#tech-stack)
@@ -71,14 +72,14 @@ state until you add recipes through the admin panel.
 | --- | --- | --- | --- |
 | `DATABASE_URL` | backend / Vercel | `""` (local SQLite) | PostgreSQL connection string (required for durable data on Vercel). `POSTGRES_URL` / `POSTGRES_PRISMA_URL` also work |
 | `SUPABASE_URL` | backend / Vercel | `""` | Supabase project URL for persistent image uploads |
-| `SUPABASE_SECRET_KEY` | backend / Vercel | `""` (local uploads) | Server-only Supabase secret key for Storage uploads |
+| `SUPABASE_SECRET_KEY` | backend / Vercel | `""` (database-backed uploads) | Server-only Supabase secret key for Storage uploads |
 | `SUPABASE_SERVICE_ROLE_KEY` | backend / Vercel | `""` | Legacy alternative to `SUPABASE_SECRET_KEY` |
 | `SUPABASE_STORAGE_BUCKET` | backend / Vercel | `recipe-images` | Public Supabase Storage bucket for recipe images |
 | `CLOUDINARY_URL` | backend / Vercel | `""` | Optional legacy Cloudinary upload fallback |
 | `VITE_API_BASE_URL` | frontend build | `""` (same origin) | Point the frontend at a backend on a different origin |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | backend | `admin` / `admin` | Basic auth for `/api/admin` |
 | `SITE_BASE_URL` | backend | `""` (same origin) | Base URL the admin panel links to (e.g. `http://localhost:5173` in dev) |
-| `RECIPE_DATA_DIR` | backend | `backend/data` | Where the local SQLite database and uploads are stored (forced to `/tmp/recipe_data` on Vercel) |
+| `RECIPE_DATA_DIR` | backend | `backend/data` | Where the local SQLite database and legacy uploads live (forced to `/tmp/recipe_data` on Vercel) |
 
 Never expose Supabase secret or service-role keys to the frontend (no `VITE_` prefix).
 
@@ -92,7 +93,7 @@ Never expose Supabase secret or service-role keys to the frontend (no `VITE_` pr
 | POST | `/api/recipes` | Create a recipe (JSON body: `title`, `description`, `image`, `ingredients[]`, `steps[]`) |
 | DELETE | `/api/recipes/{id}` | Delete a recipe |
 | GET | `/api/admin` | Admin panel (HTTP basic auth) |
-| GET | `/api/media/{file}` | Uploaded images (local storage fallback) |
+| GET | `/api/media/{file}` | Uploaded images stored in the database (falls back to legacy files on disk) |
 
 Interactive docs are available at `/docs` while the backend runs.
 
@@ -142,4 +143,5 @@ Set these in **Vercel Dashboard → Project Settings → Environment Variables**
    `recipe-images` and set `SUPABASE_URL` (Project Settings → Data API) and
    `SUPABASE_SECRET_KEY` (Project Settings → API Keys). Older projects can use
    `SUPABASE_SERVICE_ROLE_KEY`; set `SUPABASE_STORAGE_BUCKET` only if the bucket has a
-   different name. Without Supabase, uploads land in the function's ephemeral `/tmp`.
+   different name. Without Supabase, uploads are stored as rows in the database, which is
+   durable as long as `DATABASE_URL` points at PostgreSQL.

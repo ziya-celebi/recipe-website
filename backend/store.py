@@ -3,7 +3,17 @@ import os
 from pathlib import Path
 from threading import Lock
 
-from sqlalchemy import Column, Integer, String, Text, JSON, create_engine, select, delete
+from sqlalchemy import (
+    Column,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    JSON,
+    create_engine,
+    select,
+    delete,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 from models import Recipe, RecipeCreate
@@ -36,6 +46,14 @@ class RecipeRecord(Base):
             ingredients=list(self.ingredients or []),
             steps=list(self.steps or []),
         )
+
+
+class ImageRecord(Base):
+    __tablename__ = "recipe_images"
+
+    filename = Column(String(255), primary_key=True)
+    content_type = Column(String(100), nullable=False, default="application/octet-stream")
+    data = Column(LargeBinary, nullable=False)
 
 
 def data_dir() -> Path:
@@ -175,6 +193,26 @@ def create_recipe(payload: RecipeCreate) -> Recipe:
             session.commit()
             session.refresh(record)
             return record.to_pydantic()
+
+
+def save_image(filename: str, content_type: str, data: bytes) -> None:
+    with _lock:
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            session.add(
+                ImageRecord(filename=filename, content_type=content_type, data=data)
+            )
+            session.commit()
+
+
+def get_image(filename: str) -> tuple[str, bytes] | None:
+    with _lock:
+        session_factory = _get_session_factory()
+        with session_factory() as session:
+            record = session.get(ImageRecord, filename)
+            if record is None:
+                return None
+            return record.content_type, record.data
 
 
 def delete_recipe(recipe_id: int) -> bool:

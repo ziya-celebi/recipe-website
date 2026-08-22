@@ -204,7 +204,7 @@ def test_admin_uploads_image_to_supabase_storage(monkeypatch):
     assert image_url.endswith(".png")
 
 
-def test_admin_uses_local_image_storage_without_supabase():
+def test_admin_stores_image_in_database_without_supabase():
     response = client.post(
         "/api/admin/recipes",
         data={
@@ -222,7 +222,24 @@ def test_admin_uses_local_image_storage_without_supabase():
     image_url = store.list_recipes()[0].image
     assert image_url.startswith("/api/media/")
     filename = image_url.removeprefix("/api/media/")
-    assert (store.uploads_dir() / filename).read_bytes() == b"gif-bytes"
+    assert store.get_image(filename) == ("image/gif", b"gif-bytes")
+
+    media_response = client.get(image_url)
+    assert media_response.status_code == 200
+    assert media_response.headers["content-type"] == "image/gif"
+    assert media_response.content == b"gif-bytes"
+
+
+def test_media_serves_legacy_files_from_disk():
+    (store.uploads_dir() / "legacy.png").write_bytes(b"png-bytes")
+
+    response = client.get("/api/media/legacy.png")
+    assert response.status_code == 200
+    assert response.content == b"png-bytes"
+
+
+def test_media_returns_404_for_unknown_image():
+    assert client.get("/api/media/missing.png").status_code == 404
 
 
 def test_admin_does_not_create_recipe_when_supabase_upload_fails(monkeypatch):
