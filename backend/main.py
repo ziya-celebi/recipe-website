@@ -2,14 +2,16 @@
 from pathlib import Path                                                                                                                                               
                                                                                                                                                                        
 from fastapi import FastAPI, HTTPException, status                                                                                                                     
-from fastapi.middleware.cors import CORSMiddleware                                                                                                                     
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles                                                                                                                            
                                                                                                                                                                        
 from admin import router as admin_router                                                                                                                               
 from models import Recipe, RecipeCreate                                                                                                                                
 from store import (                                                                                                                                                    
     create_recipe,                                                                                                                                                     
-    delete_recipe,                                                                                                                                                     
+    delete_recipe,
+    get_image,
     get_recipe as store_get_recipe,                                                                                                                                    
     list_recipes as store_list_recipes,                                                                                                                                
     uploads_dir,                                                                                                                                                       
@@ -30,9 +32,26 @@ static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():                                                                                                                                                
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")                                                                                        
                                                                                                                                                                        
-app.mount("/api/media", StaticFiles(directory=str(uploads_dir())), name="media")                                                                                           
-                                                                                                                                                                       
-app.include_router(admin_router)                                                                                                                                       
+app.include_router(admin_router)
+
+
+@app.get("/api/media/{filename}")
+def media(filename: str):
+    filename = Path(filename).name
+    stored = get_image(filename)
+    if stored is not None:
+        content_type, data = stored
+        return Response(
+            content=data,
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        )
+
+    legacy_path = uploads_dir() / filename
+    if legacy_path.is_file():
+        return FileResponse(legacy_path)
+
+    raise HTTPException(status_code=404, detail="Image not found")                                                                                                                                       
                                                                                                                                                                        
                                                                                                                                                                        
 @app.get("/")                                                                                                                                                          

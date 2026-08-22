@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 
 from auth import require_admin
 from models import RecipeCreate
-from store import create_recipe, delete_recipe, get_db_type, list_recipes, uploads_dir
+from store import create_recipe, delete_recipe, get_db_type, list_recipes, save_image
 
 try:
     import cloudinary
@@ -131,8 +131,11 @@ def _save_image(image: UploadFile | None, image_url: str = "") -> str | None:
                 print(f"Cloudinary upload failed: {e}")
 
         filename = f"{uuid4().hex}{suffix}"
-        dest = uploads_dir() / filename
-        dest.write_bytes(image.file.read())
+        save_image(
+            filename,
+            image.content_type or "application/octet-stream",
+            image.file.read(),
+        )
         return f"/api/media/{filename}"
     clean_url = image_url.strip()
     return clean_url if clean_url else None
