@@ -22,7 +22,7 @@ def test_read_root():
 
 
 def test_list_recipes():
-    response = client.get("/recipes")
+    response = client.get("/api/recipes")
     assert response.status_code == 200
     recipes = response.json()
     assert len(recipes) >= 6
@@ -30,7 +30,7 @@ def test_list_recipes():
 
 
 def test_list_recipes_search_by_title():
-    response = client.get("/recipes?q=pancake")
+    response = client.get("/api/recipes?q=pancake")
     assert response.status_code == 200
     recipes = response.json()
     assert len(recipes) == 1
@@ -38,7 +38,7 @@ def test_list_recipes_search_by_title():
 
 
 def test_list_recipes_search_by_ingredient():
-    response = client.get("/recipes?q=shrimp")
+    response = client.get("/api/recipes?q=shrimp")
     assert response.status_code == 200
     recipes = response.json()
     assert len(recipes) == 1
@@ -46,7 +46,7 @@ def test_list_recipes_search_by_ingredient():
 
 
 def test_list_recipes_search_case_insensitive():
-    response = client.get("/recipes?q=PANCAKES")
+    response = client.get("/api/recipes?q=PANCAKES")
     assert response.status_code == 200
     recipes = response.json()
     assert len(recipes) == 1
@@ -54,14 +54,14 @@ def test_list_recipes_search_case_insensitive():
 
 
 def test_list_recipes_search_no_match():
-    response = client.get("/recipes?q=nonexistent_recipe_query")
+    response = client.get("/api/recipes?q=nonexistent_recipe_query")
     assert response.status_code == 200
     recipes = response.json()
     assert recipes == []
 
 
 def test_get_recipe():
-    response = client.get("/recipes/1")
+    response = client.get("/api/recipes/1")
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == "Pancakes"
@@ -69,7 +69,7 @@ def test_get_recipe():
 
 
 def test_get_recipe_not_found():
-    response = client.get("/recipes/999")
+    response = client.get("/api/recipes/999")
     assert response.status_code == 404
     assert response.json()["detail"] == "Recipe not found"
 
@@ -82,7 +82,7 @@ def test_create_recipe_api():
         "ingredients": ["4 thick slices brioche", "2 eggs", "1/2 cup milk", "1 tsp cinnamon"],
         "steps": ["Whisk custard mixture.", "Dip bread slices.", "Cook on buttered skillet."],
     }
-    response = client.post("/recipes", json=payload)
+    response = client.post("/api/recipes", json=payload)
     assert response.status_code == 201
     data = response.json()
     assert data["title"] == "French Toast"
@@ -90,22 +90,22 @@ def test_create_recipe_api():
 
 
 def test_delete_recipe_api():
-    response = client.delete("/recipes/1")
+    response = client.delete("/api/recipes/1")
     assert response.status_code == 200
     assert response.json()["message"] == "Recipe deleted successfully"
 
     # Confirm it is no longer found
-    get_res = client.get("/recipes/1")
+    get_res = client.get("/api/recipes/1")
     assert get_res.status_code == 404
 
 
 def test_admin_home_auth_required():
-    response = client.get("/admin")
+    response = client.get("/api/admin")
     assert response.status_code == 401
 
 
 def test_admin_home_authenticated():
-    response = client.get("/admin", auth=("admin", "admin"))
+    response = client.get("/api/admin", auth=("admin", "admin"))
     assert response.status_code == 200
     assert "Recipe Website Admin" in response.text
     assert "Pancakes" in response.text
@@ -120,7 +120,7 @@ def test_admin_create_recipe_form():
         "image_url": "/recipes/waffles.jpg",
     }
     response = client.post(
-        "/admin/recipes",
+        "/api/admin/recipes",
         data=form_data,
         auth=("admin", "admin"),
         follow_redirects=False,
@@ -131,7 +131,7 @@ def test_admin_create_recipe_form():
 
 def test_admin_delete_recipe():
     response = client.post(
-        "/admin/recipes/2/delete",
+        "/api/admin/recipes/2/delete",
         auth=("admin", "admin"),
         follow_redirects=False,
     )

@@ -39,7 +39,7 @@ jobs:
 
           # Run the smoke tests now that it's confirmed running
           curl --fail http://localhost:8000/
-          curl --fail http://localhost:8000/recipes
+          curl --fail http://localhost:8000/api/recipes
 
   frontend:
     runs-on: ubuntu-latest
