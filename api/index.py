@@ -21,12 +21,14 @@ from main import app
 def _strip_api_prefix(path: str | None) -> str | None:
     if not path:
         return path
-    if path == "/api":
-        return "/"
-    if path.startswith("/api/"):
-        return path[4:] or "/"
-    if path.startswith("/api") and len(path) > 4:
-        return path[4:] or "/"
+    # Handle /api, /api/, and /api/anything
+    if path.startswith("/api"):
+        # Remove /api prefix
+        remaining = path[4:]
+        # If remaining is empty or just /, return /
+        if not remaining or remaining == "/":
+            return "/"
+        return remaining
     return path
 
 
@@ -38,20 +40,25 @@ class CustomMangum:
 
     def __call__(self, event, context):
         if isinstance(event, dict):
+            # Strip /api prefix from all path fields
             for key in ("path", "rawPath"):
                 if key in event:
-                    event[key] = _strip_api_prefix(event[key])
+                    original_path = event[key]
+                    stripped_path = _strip_api_prefix(original_path)
+                    event[key] = stripped_path
 
+            # Handle request context paths
             request_context = event.get("requestContext")
             if isinstance(request_context, dict):
-                request_context["path"] = _strip_api_prefix(request_context.get("path"))
+                for key in ("path",):
+                    if key in request_context:
+                        request_context[key] = _strip_api_prefix(request_context[key])
+                
                 http_data = request_context.get("http")
                 if isinstance(http_data, dict):
-                    http_data["path"] = _strip_api_prefix(http_data.get("path"))
-
-            if "path" in event and event["path"] == "/":
-                if "rawPath" in event and event["rawPath"] == "/":
-                    event["rawPath"] = "/"
+                    for key in ("path",):
+                        if key in http_data:
+                            http_data[key] = _strip_api_prefix(http_data[key])
 
         return self.mangum_app(event, context)
 
