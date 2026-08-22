@@ -1,6 +1,9 @@
+from urllib.error import HTTPError
+
 import pytest
 from fastapi.testclient import TestClient
 
+import admin
 import store
 from main import app
 
@@ -26,6 +29,10 @@ SHRIMP = {
 @pytest.fixture(autouse=True)
 def reset_store(monkeypatch, tmp_path):
     monkeypatch.setenv("RECIPE_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SECRET_KEY", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+    monkeypatch.delenv("SUPABASE_STORAGE_BUCKET", raising=False)
     store.reset()
     yield
     store.reset()
@@ -150,6 +157,99 @@ def test_admin_create_recipe_form():
     assert "created=1" in response.headers["location"]
 
 
+def test_admin_uploads_image_to_supabase_storage(monkeypatch):
+    class UploadResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return False
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url.startswith(
+            "https://example.supabase.co/storage/v1/object/recipe-images/recipes/"
+        )
+        assert request.full_url.endswith(".png")
+        assert request.data == b"image-bytes"
+        assert request.headers["Apikey"] == "sb_secret_storage"
+        assert "Authorization" not in request.headers
+        assert request.headers["Content-type"] == "image/png"
+        assert request.headers["X-upsert"] == "false"
+        assert timeout == 20
+        return UploadResponse()
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "sb_secret_storage")
+    monkeypatch.setattr(admin, "urlopen", fake_urlopen)
+
+    response = client.post(
+        "/api/admin/recipes",
+        data={
+            "title": "Stored Image",
+            "description": "",
+            "ingredients": "",
+            "steps": "",
+        },
+        files={"image": ("dish.png", b"image-bytes", "image/png")},
+        auth=("admin", "admin"),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    image_url = store.list_recipes()[0].image
+    assert image_url.startswith(
+        "https://example.supabase.co/storage/v1/object/public/"
+        "recipe-images/recipes/"
+    )
+    assert image_url.endswith(".png")
+
+
+def test_admin_uses_local_image_storage_without_supabase():
+    response = client.post(
+        "/api/admin/recipes",
+        data={
+            "title": "Local Image",
+            "description": "",
+            "ingredients": "",
+            "steps": "",
+        },
+        files={"image": ("dish.gif", b"gif-bytes", "image/gif")},
+        auth=("admin", "admin"),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    image_url = store.list_recipes()[0].image
+    assert image_url.startswith("/api/media/")
+    filename = image_url.removeprefix("/api/media/")
+    assert (store.uploads_dir() / filename).read_bytes() == b"gif-bytes"
+
+
+def test_admin_does_not_create_recipe_when_supabase_upload_fails(monkeypatch):
+    def failed_urlopen(request, timeout):
+        raise HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-role-key")
+    monkeypatch.setattr(admin, "urlopen", failed_urlopen)
+
+    response = client.post(
+        "/api/admin/recipes",
+        data={
+            "title": "Missing Bucket",
+            "description": "",
+            "ingredients": "",
+            "steps": "",
+        },
+        files={"image": ("dish.webp", b"image-bytes", "image/webp")},
+        auth=("admin", "admin"),
+    )
+
+    assert response.status_code == 502
+    assert "Check the bucket name and secret key." in response.text
+    assert store.list_recipes() == []
+
+
 def test_admin_delete_recipe(recipes):
     response = client.post(
         f"/api/admin/recipes/{recipes[1]['id']}/delete",
@@ -184,4 +284,3 @@ def test_legacy_recipes_json_migration(monkeypatch, tmp_path):
     assert len(items) == 1
     assert items[0].title == "Legacy Pasta"
     assert items[0].ingredients == ["Pasta"]
-
