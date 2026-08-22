@@ -9,7 +9,11 @@ const searchQuery = ref('')
 const activeTab = ref('all')
 const status = ref('Loading recipes...')
 
-const { isFavorite, favoritesCount } = useFavorites()
+const { isFavorite } = useFavorites()
+
+const savedCount = computed(
+  () => recipes.value.filter((recipe) => isFavorite(recipe.id)).length
+)
 
 const filteredRecipes = computed(() => {
   let list = recipes.value
@@ -68,7 +72,7 @@ onMounted(async () => {
           :aria-selected="activeTab === 'favorites'"
           @click="activeTab = 'favorites'"
         >
-          ❤️ Saved ({{ favoritesCount }})
+          ❤️ Saved ({{ savedCount }})
         </button>
       </div>
 
@@ -106,7 +110,7 @@ onMounted(async () => {
           </button>
         </div>
         <p v-if="searchQuery && !status" class="search-meta">
-          Showing {{ filteredRecipes.length }} of {{ activeTab === 'favorites' ? favoritesCount : recipes.length }} {{ filteredRecipes.length === 1 ? 'recipe' : 'recipes' }}
+          Showing {{ filteredRecipes.length }} of {{ activeTab === 'favorites' ? savedCount : recipes.length }} {{ filteredRecipes.length === 1 ? 'recipe' : 'recipes' }}
         </p>
       </div>
     </div>
@@ -115,7 +119,7 @@ onMounted(async () => {
 
     <!-- Empty state for empty saved list -->
     <div
-      v-else-if="activeTab === 'favorites' && favoritesCount === 0"
+      v-else-if="activeTab === 'favorites' && savedCount === 0"
       class="empty-state"
     >
       <p class="empty-title">No saved recipes yet</p>
@@ -125,6 +129,12 @@ onMounted(async () => {
       <button type="button" class="button" @click="activeTab = 'all'">
         Browse all recipes
       </button>
+    </div>
+
+    <!-- Empty state when no recipes exist yet -->
+    <div v-else-if="recipes.length === 0" class="empty-state">
+      <p class="empty-title">No recipes yet</p>
+      <p class="empty-text">Recipes added from the admin panel show up here.</p>
     </div>
 
     <!-- Empty state for search query with zero matches -->

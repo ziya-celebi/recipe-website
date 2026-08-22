@@ -25,7 +25,7 @@ onMounted(async () => {
         <h1>Recipes worth making twice</h1>
         <p>
           Short ingredient lists, clear steps, and food that actually looks like
-          dinner. Start with pancakes or a quick tomato pasta.
+          dinner.
         </p>
         <RouterLink class="button" to="/recipes">Browse recipes</RouterLink>
       </div>
@@ -37,6 +37,10 @@ onMounted(async () => {
         <RouterLink to="/recipes">See all</RouterLink>
       </div>
       <p v-if="status" class="status">{{ status }}</p>
+      <div v-else-if="recipes.length === 0" class="empty-state">
+        <p class="empty-title">No recipes yet</p>
+        <p class="empty-text">Recipes added from the admin panel show up here.</p>
+      </div>
       <ul v-else class="recipe-grid">
         <RecipeCard
           v-for="recipe in recipes"
