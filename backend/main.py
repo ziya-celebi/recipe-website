@@ -20,7 +20,7 @@ app = FastAPI(title="Recipe API", description="API and Admin Panel for Recipes")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # Changed to False to avoid CORS issues with wildcard
     allow_methods=["*"],
     allow_headers=["*"],
 )
