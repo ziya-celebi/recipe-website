@@ -8,18 +8,6 @@
             "destination": "/api/index.py"
         },
         {
-            "source": "/admin/:path*",
-            "destination": "/api/index.py"
-        },
-        {
-            "source": "/media/:path*",
-            "destination": "/api/index.py"
-        },
-        {
-            "source": "/static/:path*",
-            "destination": "/api/index.py"
-        },
-        {
             "source": "/(.*)",
             "destination": "/frontend/dist/$1"
         }
