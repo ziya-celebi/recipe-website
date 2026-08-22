@@ -1,0 +1,16 @@
+[project]
+name = "recipe-website"
+version = "0.1.0"
+description = "Recipe website with FastAPI backend and Vue frontend"
+requires-python = ">=3.9"
+dependencies = [
+    "fastapi>=0.141.1",
+    "jinja2>=3.1.6",
+    "mangum>=0.17.0",
+    "python-multipart>=0.0.32",
+    "uvicorn>=0.52.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

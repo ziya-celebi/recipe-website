@@ -94,7 +94,7 @@ async def admin_create_recipe(
             steps=_lines(steps),
         )
     )
-    return RedirectResponse(url=f"/admin?created=1&id={recipe.id}", status_code=303)
+    return RedirectResponse(url=f"/api/admin?created=1&id={recipe.id}", status_code=303)
 
 
 @router.post("/recipes/{recipe_id}/delete")

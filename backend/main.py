@@ -30,7 +30,7 @@ static_dir = Path(__file__).resolve().parent / "static"
 if static_dir.exists():                                                                                                                                                
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")                                                                                        
                                                                                                                                                                        
-app.mount("/media", StaticFiles(directory=str(uploads_dir())), name="media")                                                                                           
+app.mount("/api/media", StaticFiles(directory=str(uploads_dir())), name="media")                                                                                           
                                                                                                                                                                        
 app.include_router(admin_router)                                                                                                                                       
                                                                                                                                                                        
@@ -40,7 +40,7 @@ def read_root():
     return {"message": "Hello from FastAPI!"}                                                                                                                          
                                                                                                                                                                        
                                                                                                                                                                        
-@app.get("/recipes", response_model=list[Recipe])                                                                                                                      
+@app.get("/api/recipes", response_model=list[Recipe])                                                                                                                      
 def list_recipes(q: str | None = None):                                                                                                                                
     recipes = store_list_recipes()                                                                                                                                     
     if not q:                                                                                                                                                          
@@ -55,7 +55,7 @@ def list_recipes(q: str | None = None):
     ]                                                                                                                                                                  
                                                                                                                                                                        
                                                                                                                                                                        
-@app.get("/recipes/{recipe_id}", response_model=Recipe)                                                                                                                
+@app.get("/api/recipes/{recipe_id}", response_model=Recipe)                                                                                                                
 def get_recipe(recipe_id: int):                                                                                                                                        
     recipe = store_get_recipe(recipe_id)                                                                                                                               
     if recipe is not None:                                                                                                                                             
@@ -63,14 +63,14 @@ def get_recipe(recipe_id: int):
     raise HTTPException(status_code=404, detail="Recipe not found")                                                                                                    
                                                                                                                                                                        
                                                                                                                                                                        
-@app.post("/recipes", response_model=Recipe, status_code=status.HTTP_201_CREATED)                                                                                      
+@app.post("/api/recipes", response_model=Recipe, status_code=status.HTTP_201_CREATED)                                                                                      
 def add_recipe(payload: RecipeCreate):                                                                                                                                 
     if not payload.title.strip():                                                                                                                                      
         raise HTTPException(status_code=400, detail="Recipe title is required")                                                                                        
     return create_recipe(payload)                                                                                                                                      
                                                                                                                                                                        
                                                                                                                                                                        
-@app.delete("/recipes/{recipe_id}")                                                                                                                                    
+@app.delete("/api/recipes/{recipe_id}")                                                                                                                                    
 def remove_recipe(recipe_id: int):                                                                                                                                     
     deleted = delete_recipe(recipe_id)                                                                                                                                 
     if not deleted:                                                                                                                                                    

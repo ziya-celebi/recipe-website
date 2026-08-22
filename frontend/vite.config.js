@@ -11,10 +11,15 @@ export default defineConfig({
       '/api': {
         target: backendTarget,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/media': backendTarget,
-      '/static': backendTarget,
+      '/api/media': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/api/static': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
     },
   },
   preview: {
@@ -22,10 +27,15 @@ export default defineConfig({
       '/api': {
         target: backendTarget,
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
-      '/media': backendTarget,
-      '/static': backendTarget,
+      '/api/media': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+      '/api/static': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
     },
   },
   build: {
