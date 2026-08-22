@@ -80,7 +80,11 @@ relative URLs and no CORS setup is needed. Open http://localhost:5173.
 | Variable | Where | Default | Purpose |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | backend / Vercel | `""` (uses local SQLite) | PostgreSQL connection string (required for durable data on Vercel) |
-| `CLOUDINARY_URL` | backend / Vercel | `""` (uses local uploads) | Cloudinary URL for persistent image uploads |
+| `SUPABASE_URL` | backend / Vercel | `""` | Supabase project URL for persistent image uploads |
+| `SUPABASE_SECRET_KEY` | backend / Vercel | `""` (uses local uploads) | Server-only Supabase secret key for Storage uploads |
+| `SUPABASE_SERVICE_ROLE_KEY` | backend / Vercel | `""` | Legacy alternative to `SUPABASE_SECRET_KEY` |
+| `SUPABASE_STORAGE_BUCKET` | backend / Vercel | `recipe-images` | Public Supabase Storage bucket for recipe images |
+| `CLOUDINARY_URL` | backend / Vercel | `""` | Optional legacy Cloudinary upload fallback |
 | `VITE_API_BASE_URL` | frontend build | `""` (same origin) | Point the frontend at a backend on a different origin |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | backend | `admin` / `admin` | Basic auth for `/api/admin` |
 | `SITE_BASE_URL` | backend | `""` (same origin) | Base URL the admin panel links to (e.g. `http://localhost:5173` in dev) |
@@ -120,4 +124,10 @@ cd backend && pytest
 Add these in **Vercel Dashboard → Project Settings → Environment Variables**:
 1. `DATABASE_URL`: Your PostgreSQL connection string from [Neon](https://neon.tech), [Supabase](https://supabase.com), or a Vercel Marketplace integration (e.g. `postgresql://user:password@ep-xyz.aws.neon.tech/neondb?sslmode=require`). Without it, Vercel falls back to temporary SQLite storage and recipes disappear when the function is recycled.
 2. `ADMIN_USERNAME` & `ADMIN_PASSWORD`: Custom credentials for `/api/admin`.
-3. (Optional) `CLOUDINARY_URL`: From [Cloudinary](https://cloudinary.com) for persistent image uploads (`cloudinary://key:secret@cloudname`).
+3. For persistent image uploads, create a **public** Supabase Storage bucket named `recipe-images`, then add:
+   - `SUPABASE_URL`: Project Settings → Data API → Project URL.
+   - `SUPABASE_SECRET_KEY`: Project Settings → API Keys → Secret keys. Use a dedicated key for this backend.
+   - Legacy projects can use `SUPABASE_SERVICE_ROLE_KEY` instead.
+   - (Optional) `SUPABASE_STORAGE_BUCKET`: Use this only if the public bucket has a different name.
+
+Keep Supabase secret and service role keys server-side. Never prefix them with `VITE_` or expose them to the frontend.
