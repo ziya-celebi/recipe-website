@@ -15,13 +15,25 @@ cd backend && SITE_BASE_URL=http://localhost:5173 ../.venv/bin/python -m uvicorn
 
 - `SITE_BASE_URL` drives the admin panel's "Open Public Site" / "View" links. Leave it
   empty for same-origin (production) behaviour; set it to the Vite dev URL in dev.
-- Recipe data: `backend/data/recipes.json`, uploads in `backend/data/uploads`; override
-  the location with `RECIPE_DATA_DIR=/tmp/recipe_data_clean` (the store creates the dir).
-- `store.py` seeds `SEED_RECIPES` only when the JSON file does not exist. As of the
-  "remove seed recipes" change `SEED_RECIPES` is empty, so a fresh dir starts at zero
-  recipes and ids restart at 1. **A stale `backend/data/recipes.json` from an older
-  checkout still holds the old 6 seeds** — always point `RECIPE_DATA_DIR` at a fresh
-  directory (or delete the JSON) when testing empty-state / seeding behaviour.
+- Storage is SQLAlchemy-backed (`backend/store.py`). `get_db_url()` prefers
+  `DATABASE_URL` / `POSTGRES_URL` / `POSTGRES_PRISMA_URL` (rewriting `postgres://` to
+  `postgresql://`) and otherwise falls back to SQLite at `<data_dir>/recipes.db`.
+  The admin panel header shows which one is active: "PostgreSQL (Cloud)" vs
+  "SQLite (Local)" — a fast, visual way to confirm DB wiring.
+- Data dir: `backend/data` (uploads in `backend/data/uploads`); override with
+  `RECIPE_DATA_DIR=/tmp/recipe_data_clean`. **`api/index.py` hard-sets
+  `RECIPE_DATA_DIR=/tmp/recipe_data`**, so in the prod-sim `RECIPE_DATA_DIR` from the
+  environment is ignored — delete `/tmp/recipe_data` to get a clean SQLite state.
+- `SEED_RECIPES` is empty, so a fresh DB starts at zero recipes and ids restart at 1.
+  A legacy `backend/data/recipes.json` is migrated into the DB on first init, and a stale
+  `recipes.db`/`recipes.json` from an older checkout keeps old rows — delete them (both are
+  gitignored) when testing empty-state behaviour.
+- Testing durable storage without cloud credentials: run a throwaway Postgres in Docker
+  and point `DATABASE_URL` at it, e.g.
+  `docker run -d --name pgtest -e POSTGRES_PASSWORD=pgpass -e POSTGRES_DB=recipes -p 5433:5432 postgres:16-alpine`
+  then `DATABASE_URL=postgresql://postgres:pgpass@127.0.0.1:5433/recipes`. Restarting the
+  app process and re-checking `/api/recipes` proves persistence; restarting *without*
+  `DATABASE_URL` (SQLite fallback, empty catalogue) is a good adversarial control.
 - Empty catalogue should render the "No recipes yet" empty state on both Home and
   `/recipes`; the "No recipes found … matching \"…\"" block is the *search* empty state
   and appearing on an empty catalogue would be a regression (branch ordering in
@@ -46,12 +58,22 @@ so all app requests should be same-origin. If you see cross-origin requests to
 rewrites `/api/(.*) -> /api/index` and `/(.*) -> /index.html`. To reproduce that locally,
 build the frontend and serve `frontend/dist` with an ASGI app that routes `/api*` to
 `backend/main.py:app`, serves existing dist files, and falls back to `index.html` for
-everything else (a working helper was kept at `/home/ubuntu/vercel_sim.py`):
+everything else. A working helper is kept at `/home/ubuntu/vercel_sim.py` (recreate it if
+the box was reset — it importing `api.index` also exercises the real function entrypoint):
 
 ```bash
-cd frontend && npm run build
-cd .. && .venv/bin/python -m uvicorn vercel_sim:app --port 8080
+cd frontend && npm run build           # needs node 22.12 (nvm use 22.12.0)
+cd /home/ubuntu && DATABASE_URL=... /home/ubuntu/repos/recipe-website/.venv/bin/python \
+  -m uvicorn vercel_sim:app --port 8080   # run from the dir containing vercel_sim.py
 ```
+
+Pitfalls seen:
+- Do **not** `Mount("/api", api_app)` — Starlette strips the prefix while the FastAPI
+  routes already include `/api`, giving 404s on `/api/recipes` and `/api/admin`. Dispatch
+  with a plain ASGI callable that forwards `/api*` paths unchanged.
+- Start long-running servers in a persistent background shell; `nohup ... &` from a
+  one-shot shell gets killed with the shell, and a stale process still holding :8080 makes
+  a "restarted" server silently fail to bind.
 
 Then check `/`, a deep link like `/recipes/1`, `/api/recipes`, and `/api/admin`.
 
@@ -88,6 +110,15 @@ Then check `/`, a deep link like `/recipes/1`, `/api/recipes`, and `/api/admin`.
 - `/api/media/*` is a Starlette `StaticFiles` mount inside the function; it only works if
   Vercel's `/api/(.*)` rewrite preserves the original path to the function. Verify by
   uploading an image on a preview deployment.
+
+## Python version gotcha for the test suite
+
+`backend/tests/test_deployment.py` imports `tomllib` (stdlib only on **Python 3.11+**),
+but `pyproject.toml` declares `requires-python >=3.9` and the default box venv may be
+Python 3.10 — there `pytest` aborts during collection with
+`ModuleNotFoundError: No module named 'tomllib'`. Create the venv with
+`~/.pyenv/versions/3.11.11/bin/python -m venv ...` (or use `tomli` as a fallback) when
+running the full suite.
 
 ## Devin Secrets Needed
 
