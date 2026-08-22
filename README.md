@@ -79,7 +79,7 @@ relative URLs and no CORS setup is needed. Open http://localhost:5173.
 
 | Variable | Where | Default | Purpose |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | backend / Vercel | `""` (uses local SQLite) | PostgreSQL connection string (e.g. from Neon, Supabase, Vercel Postgres) |
+| `DATABASE_URL` | backend / Vercel | `""` (uses local SQLite) | PostgreSQL connection string (required for durable data on Vercel) |
 | `CLOUDINARY_URL` | backend / Vercel | `""` (uses local uploads) | Cloudinary URL for persistent image uploads |
 | `VITE_API_BASE_URL` | frontend build | `""` (same origin) | Point the frontend at a backend on a different origin |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | backend | `admin` / `admin` | Basic auth for `/api/admin` |
@@ -118,7 +118,6 @@ cd backend && pytest
 
 ### Environment Variables on Vercel:
 Add these in **Vercel Dashboard → Project Settings → Environment Variables**:
-1. `DATABASE_URL`: Your PostgreSQL connection string from [Neon](https://neon.tech) or [Supabase](https://supabase.com) (e.g. `postgresql://user:password@ep-xyz.aws.neon.tech/neondb?sslmode=require`).
+1. `DATABASE_URL`: Your PostgreSQL connection string from [Neon](https://neon.tech), [Supabase](https://supabase.com), or a Vercel Marketplace integration (e.g. `postgresql://user:password@ep-xyz.aws.neon.tech/neondb?sslmode=require`). Without it, Vercel falls back to temporary SQLite storage and recipes disappear when the function is recycled.
 2. `ADMIN_USERNAME` & `ADMIN_PASSWORD`: Custom credentials for `/api/admin`.
 3. (Optional) `CLOUDINARY_URL`: From [Cloudinary](https://cloudinary.com) for persistent image uploads (`cloudinary://key:secret@cloudname`).
-
