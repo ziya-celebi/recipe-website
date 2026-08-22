@@ -14,7 +14,7 @@ backend_src = backend_dir / "src"
 if backend_src.exists():
     sys.path.insert(0, str(backend_src))
 
-from main import app
+from main import app as _app
 
 # Vercel looks for 'app' variable for ASGI applications
-# This is the standard Vercel entrypoint
+app = _app

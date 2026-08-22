@@ -11,6 +11,9 @@ dependencies = [
     "uvicorn>=0.52.4",
 ]
 
+[tool.vercel]
+entrypoint = "api/index.py:app"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
