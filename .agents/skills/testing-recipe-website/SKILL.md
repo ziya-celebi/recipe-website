@@ -73,7 +73,9 @@ Pitfalls seen:
   with a plain ASGI callable that forwards `/api*` paths unchanged.
 - Start long-running servers in a persistent background shell; `nohup ... &` from a
   one-shot shell gets killed with the shell, and a stale process still holding :8080 makes
-  a "restarted" server silently fail to bind.
+  a "restarted" server silently fail to bind. `vercel_sim.py` is not in the repo, so a
+  reset box needs it recreated; check for a stale uvicorn first with
+  `ss -lptn 'sport = :8000'` (and `:8080`) and `kill -9` it.
 
 Then check `/`, a deep link like `/recipes/1`, `/api/recipes`, and `/api/admin`.
 
@@ -87,6 +89,10 @@ Then check `/`, a deep link like `/recipes/1`, `/api/recipes`, and `/api/admin`.
   when you will click through to the public site.
 - Uploading an image: click "Choose File", then in the GTK file dialog press `ctrl+l`
   and type the absolute path. Uploaded images get URLs under `/api/media/<uuid>.<ext>`.
+  PIL is not installed in `.venv`; generate test images with ImageMagick, e.g.
+  `convert -size 800x500 xc:'#dc285a' /tmp/test.png`.
+- `/api/media/{filename}` is GET-only, so `curl -I` reports 405. Inspect media responses
+  with `curl -s -D - -o /dev/null <url>` instead.
 - Delete uses a JS `confirm()` dialog; accept it, then the app 303-redirects to
   `/api/admin?deleted=1`. The recipe row shifts up after a page reload — re-screenshot
   before clicking the 🗑️ button so you hit the right row.
@@ -107,9 +113,10 @@ Then check `/`, a deep link like `/recipes/1`, `/api/recipes`, and `/api/admin`.
   **empty** catalogue (the "No recipes yet" state) rather than falling back to demo
   recipes — expect admin-created content to vanish on real Vercel unless durable storage
   is added.
-- `/api/media/*` is a Starlette `StaticFiles` mount inside the function; it only works if
-  Vercel's `/api/(.*)` rewrite preserves the original path to the function. Verify by
-  uploading an image on a preview deployment.
+- Uploaded images are no longer written to disk: `/api/media/{filename}` is a route that
+  serves bytes from the `recipe_images` table (falling back to legacy files in
+  `uploads_dir()`), so images are durable whenever `DATABASE_URL` points at PostgreSQL.
+  Recipes created before that change still reference files lost from `/tmp`.
 
 ## Python version gotcha for the test suite
 
