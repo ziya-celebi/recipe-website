@@ -1,5 +1,5 @@
                                                                                                                                                                        
-const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : ''                                                                                                
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')                                                                                                
                                                                                                                                                                        
 export async function fetchRecipes(query = '') {                                                                                                                       
   const url = query                                                                                                                                                    

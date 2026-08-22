@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -20,6 +21,10 @@ router = APIRouter(prefix="/api/admin", dependencies=[Depends(require_admin)])
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
 
+def _site_base() -> str:
+    return os.environ.get("SITE_BASE_URL", "").rstrip("/")
+
+
 def _lines(value: str) -> list[str]:
     return [line.strip() for line in value.splitlines() if line.strip()]
 
@@ -37,7 +42,7 @@ def _save_image(image: UploadFile | None, image_url: str = "") -> str | None:
             filename = f"{uuid4().hex}{suffix}"
             dest = uploads_dir() / filename
             dest.write_bytes(image.file.read())
-            return f"/media/{filename}"
+            return f"/api/media/{filename}"
     clean_url = image_url.strip()
     return clean_url if clean_url else None
 
@@ -57,6 +62,7 @@ def admin_home(
             "created": created == 1,
             "deleted": deleted == 1,
             "error": error,
+            "site_base": _site_base(),
         },
     )
 
@@ -81,6 +87,7 @@ async def admin_create_recipe(
                 "created": False,
                 "deleted": False,
                 "error": "Recipe title is required.",
+                "site_base": _site_base(),
             },
             status_code=400,
         )
@@ -100,4 +107,4 @@ async def admin_create_recipe(
 @router.post("/recipes/{recipe_id}/delete")
 def admin_delete_recipe(recipe_id: int):
     delete_recipe(recipe_id)
-    return RedirectResponse(url="/admin?deleted=1", status_code=303)
+    return RedirectResponse(url="/api/admin?deleted=1", status_code=303)
